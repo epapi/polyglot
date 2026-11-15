@@ -1,0 +1,50 @@
+name = "go"
+display = "Go"
+
+[version]
+detect = "go version"
+supported = ["1.26"]            # hai solo go1.26.3 installato
+
+[run]
+file_ext = ".go"
+run = "go run {file}"
+test = "go test ./..."
+
+[doc]
+cmd = "go doc {symbol}"
+cmd_all = "go doc -all {package}"
+stdlib_src = "$(go env GOROOT)/src"
+
+[lint]
+cmd = "golangci-lint run {file}"
+version = "2.15.0"
+list_json = "golangci-lint help linters --json"
+
+[lint.govet]
+list = "go tool vet help"
+explain = "go tool vet help {name}"
+
+[lint.staticcheck]
+explain = "staticcheck -explain {code}"    # binario autonomo, v0.8.2
+
+[lint.errcheck]
+explain = "TODO"                # nessuna fonte offline: pagina scritta a mano
+
+[[sources]]
+name = "effective_go"
+kind = "guide"
+origin = "https://github.com/golang/website"
+path = "_content/doc/effective_go.html"
+url = "https://go.dev/doc/effective_go"
+commit = "9d2e951dbfa18c495ec14086916e413e3554dea8"                 # git -C sources/go/website rev-parse HEAD
+license = "CC-BY-4.0"
+code_license = "BSD-3-Clause"
+
+[[sources]]
+name = "code_review_comments"
+kind = "guide"
+origin = "https://go.googlesource.com/wiki"
+path = "CodeReviewComments.md"
+url = "https://go.dev/wiki/CodeReviewComments"
+commit = "fe2268bb04c953cd65bcae752e978912f5cbddaa"
+license = "CC-BY-4.0"
