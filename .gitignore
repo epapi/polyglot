@@ -1,0 +1,10 @@
+# Python virtual env
+.venv
+
+# env file
+.env
+
+corpus/
+notes/
+sources/
+workspace/
