@@ -1,10 +1,21 @@
 import os
 import re
 
+PAGE_URL = "https://go.dev/wiki/CodeReviewComments"
+
 ANCHOR = re.compile(r"(\[[^\]]*\])\(#([^)]*)\)")
 PATH = re.compile(r"(\[[^\]]*\])\(/([^)]*)\)")
 PAGE = re.compile(r"(\[[^\]]*\])\((\w+)\)")
 A_TAG = re.compile(r'<a href="([^"]*)">(.*?)<\/a>')
+
+def build(source: dict, pack: dict, version: str) -> list[dict]:
+    """Common interface that returns sources' parsed documentation"""
+    data = []
+    with open(os.path.join(source["local"], source["path"]), "r") as f:
+        content = f.read()
+    ## thinking about what to do with the introduction
+    
+
 
 def split_sections(text: str) -> tuple:
     """Restituisce preambolo (dopo ultimo --- e il primo ##) e sezioni.
@@ -74,7 +85,6 @@ def build_sections_metadata(sections: list) -> list[dict]:
         metadata.append()
 
 if __name__ == "__main__":
-    PAGE_URL = "https://go.dev/wiki/CodeReviewComments"
     GO_VERSION = "1.26"
     corpus_path = f"corpus/go/{GO_VERSION}/guides/code_review_comments"
     with open("sources/go/go.googlesource-wiki/CodeReviewComments.md", "r") as f:

@@ -1,3 +1,4 @@
+import os
 import re
 import subprocess
 
@@ -6,6 +7,45 @@ NAME_RE = re.compile(r"^(?:func|var|type|const)\s+(\w+)")
 METHOD_RE = re.compile(r"^func\s+\(\s*(?:\w+\s+)?\*?(\w+)\)\s+(\w+)")
 IDENT_RE = re.compile(r"^(\w+)")
 SINGATURES_MATCHES = ("var ", "func ", "type ", "const ")
+
+
+def build(source: dict, pack: dict, version: str) -> list[dict]:
+    """Common interface that returns sources' parsed documentation"""
+    data = []
+    for s in source["packages"]:
+        cmd_all = pack["doc"]["cmd_all"].format(package=s)
+        result = subprocess.run(
+            cmd_all.split(),
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=30,
+        )
+        if result.stderr != "":
+            raise ValueError(f"An error occurred: {result.stderr}") 
+        text = result.stdout
+        parsed_package = parse_go_doc(text)
+        md_package = render_markdown(
+            parsed_package,
+            {
+                "source": source["name"],
+                "kind": source["kind"],
+                "language": "go",
+                "version": version,
+                "package": s,
+                "url": source["url"].format(package=s),
+                "license": source["license"]
+            }
+        )
+        data.append(
+            {
+                "path": os.path.join(os.getcwd(), f"go/{version}/{source["out"]}/{s}.md"),
+                "content": md_package,
+                "origin": cmd_all
+            }
+        )
+    return data
+
 
 
 def run_go_doc(package: str) -> str:
@@ -147,3 +187,10 @@ def render_markdown(parsed_doc: dict, metadata: dict) -> str:
 
     return md_text.rstrip() + "\n"
 
+if __name__ == "__main__":
+    import tomllib
+    pack = tomllib.load(open("packs/go/pack.toml", "rb"))
+    sources = [s for s in pack["sources"] if s["name"] == "go_doc"]
+    for s in sources:
+        data = build(s, pack, pack["version"]["supported"][0])
+        print(data)

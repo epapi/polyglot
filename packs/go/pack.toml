@@ -39,6 +39,8 @@ url = "https://go.dev/doc/effective_go"
 commit = "9d2e951dbfa18c495ec14086916e413e3554dea8"                 # git -C sources/go/website rev-parse HEAD
 license = "CC-BY-4.0"
 code_license = "BSD-3-Clause"
+local = "sources/go/website"
+out = "guides/effective_go"
 
 [[sources]]
 name = "code_review_comments"
@@ -48,3 +50,13 @@ path = "CodeReviewComments.md"
 url = "https://go.dev/wiki/CodeReviewComments"
 commit = "fe2268bb04c953cd65bcae752e978912f5cbddaa"
 license = "CC-BY-4.0"
+local = "sources/go/go.googlesource-wiki"
+out = "guides/code_review_comments"
+
+[[sources]]
+name = "go_doc"
+kind = "reference"
+out = "reference"
+url = "https://pkg.go.dev/{package}"
+license = "BSD-3-Clause"
+packages = ["errors", "fmt", "os"]
