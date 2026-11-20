@@ -116,6 +116,32 @@ The collected resources for now are:
 7. Pacchetti molto lunghi (come `fmt`): decidere se spezzare per sezione `#` o per simbolo.
 8. Per alcuni analizzatori di `govet` l'output contiene una sezione `Analyzer flags` con elenchi lunghissimi: da tagliare.
 
+#### Stato dopo il passo 3 (go doc)
+
+Implementate in `ingest.py` e verificate su `errors`, `fmt` e `os`: voci 1-5. La voce 7 resta aperta.
+
+Scelte fatte durante l'implementazione:
+
+1. **Titoli `#` nel testo di `go doc`.** Vengono abbassati nel parser (`demote_heading`: +2 nell'overview, +3 nelle descrizioni, solo a colonna 0), non in `render_markdown`. Così il renderer riceve già i livelli giusti. Se in futuro serve rendere lo stesso parse in un altro formato, la logica va spostata nel renderer.
+2. **Firme multi-riga.** `type X interface {...}` e `const (...)` sono raccolte fino alla chiusura a colonna 0. Il caso di una `func` con firma a capo non è gestito né verificato.
+3. **Gruppi `const (` / `var (`.** Il titolo `###` è costruito da `symbol_title`: primo identificatore del gruppo più il suffisso `(group)` (es. `O_RDONLY (group)`, 8 casi in `os.md`). Il titolo nomina solo il primo simbolo, gli altri compaiono solo nel blocco ```go. Alternativa scartata: elencare i primi nomi (`O_RDONLY, O_WRONLY, ... (+4)`). Da rivedere solo se in uso reale l'agente non trova costanti che esistono.Scelta: tenere così. Alternativa scartata: titolo con i primi nomi del gruppo (`O_RDONLY, O_WRONLY, ... (+4)`). Da rivedere solo se in uso reale l'agente non trova costanti che esistono.
+4. **Metodi.** I titoli escono come `Tipo.Metodo` (verificato su `os`: `File.Close`, `Root.Open`, ecc.).
+5. **Manifest.** `command` riporta il comando reale (`go doc -all <pkg>`). `go_version` è la stringa grezza. La data di build compare solo nel manifest, mai nei file del corpus.
+
+Limiti accettati:
+
+- Nell'overview il codice resta rientrato di 4 spazi, senza ` ```go ` (valido come blocco in markdown).
+- I titoli scritti a mano nell'overview del file di esempio non vengono generati: il `diff` con l'esempio differisce per questo.
+- Metodi e costruttori restano piatti sotto `Types`, non raggruppati sotto il loro tipo.
+- Il corpo delle interfacce è rientrato di 8 spazi, come lo stampa `go doc`.
+- Elenco dei pacchetti e metadati sono scritti nel codice, non letti da `pack.toml`.
+
+Verifica su `os`:
+
+- Lettura a mano: 2 simboli su 10 campionati (`CopyFS`, `Getuid`), coincidono con `go doc`. Il criterio "5-10 sezioni" non è raggiunto.
+- Controllo automatico: ogni funzione esportata di `go doc -short os` ha un titolo `###` in `os.md`. Non copre tipi, costanti, variabili e metodi.
+
+
 ### Effective Go (HTML)
 1. Rimuovere il blocco di metadati `<!--{ ... }-->` in cima al file.
 2. Risolvere le 6 direttive `{{code "/doc/progs/eff_*.go" ...}}`: leggono un intervallo di righe da file esterni, indicato con espressioni regolari.
