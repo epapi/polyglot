@@ -8,7 +8,7 @@ HEADER_RE = re.compile(r"^[A-Z]+$")
 NAME_RE = re.compile(r"^(?:func|var|type|const)\s+(\w+)")
 METHOD_RE = re.compile(r"^func\s+\(\s*(?:\w+\s+)?\*?(\w+)\)\s+(\w+)")
 IDENT_RE = re.compile(r"^(\w+)")
-SINGATURES_MATCHES = ("var ", "func ", "type ", "const ")
+SIGNATURES_MATCHES = ("var ", "func ", "type ", "const ")
 
 
 def build(source: dict, pack: dict, version: str) -> list[dict]:
@@ -46,8 +46,6 @@ def build(source: dict, pack: dict, version: str) -> list[dict]:
             }
         )
     return data
-
-
 
 def run_go_doc(package: str) -> str:
     """Runs 'go doc -all <package>' to get documentation for the package"""
@@ -136,7 +134,7 @@ def parse_go_doc(text: str) -> dict:
             continue
 
         ## checking for new signature and closing character
-        if line.startswith(SINGATURES_MATCHES):
+        if line.startswith(SIGNATURES_MATCHES):
             if symbol is not None:
                 parsed_doc["sections"][current_section].append(symbol)
             symbol = {"signature": line, "description": ""}
@@ -157,7 +155,7 @@ def parse_go_doc(text: str) -> dict:
     return parsed_doc
      
 
-def dedent_descritpion(descr: str) -> str:
+def dedent_description(descr: str) -> str:
     """Removes 4 spaces indentation from go docs' descriptions"""
     lines = []
     for line in descr.splitlines():
@@ -179,15 +177,15 @@ def render_markdown(parsed_doc: dict, metadata: dict) -> str:
         for d in items:
             paragraph_title = symbol_title(d["signature"])
             code = f"```go\n{d['signature']}\n```"
-            description = dedent_descritpion(d["description"])
+            description = dedent_description(d["description"])
             md_text += f"### {paragraph_title}\n\n{code}\n\n{description}\n\n"
 
     return f"{front_matter}\n\n{md_text.rstrip()}\n" 
 
-if __name__ == "__main__":
-    import tomllib
-    pack = tomllib.load(open("packs/go/pack.toml", "rb"))
-    sources = [s for s in pack["sources"] if s["name"] == "go_doc"]
-    for s in sources:
-        data = build(s, pack, pack["version"]["supported"][0])
-        print(data)
+# if __name__ == "__main__":
+#     import tomllib
+#     pack = tomllib.load(open("packs/go/pack.toml", "rb"))
+#     sources = [s for s in pack["sources"] if s["name"] == "go_doc"]
+#     for s in sources:
+#         data = build(s, pack, pack["version"]["supported"][0])
+#         print(data)

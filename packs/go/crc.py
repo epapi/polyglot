@@ -14,7 +14,7 @@ A_TAG = re.compile(r'<a href="([^"]*)">(.*?)<\/a>')
 def normalize_title(title: str) -> str:
     title = title.replace(" ", "-")
     title = re.sub(r'[^\w\s-]', '', title)
-    return title.lower()
+    return title.lower().strip()
 
 def build(source: dict, pack: dict, version: str) -> list[dict]:
     """Common interface that returns sources' parsed documentation"""
@@ -31,14 +31,14 @@ def build(source: dict, pack: dict, version: str) -> list[dict]:
         raise ValueError("Actual commit and source commit do not coincide")
 
     intro, sections = split_sections(content)
-    intro = fix_links(intro, PAGE_URL)
+    intro = fix_links(intro, source["url"])
 
     items = [
         {
             "normalized_title": "00-introduction",
             "title": "Introduction",
             "text": intro,
-            "url": PAGE_URL
+            "url": source["url"]
         }
     ]
 
@@ -48,7 +48,7 @@ def build(source: dict, pack: dict, version: str) -> list[dict]:
             "normalized_title": normalized_title,
             "title": s["title"],
             "text": s["text"],
-            "url": f"{PAGE_URL}#{normalized_title}"
+            "url": f"{source["url"]}#{normalized_title}"
         })
 
     for item in items:
