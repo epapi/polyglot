@@ -2,6 +2,8 @@ import os
 import re
 import subprocess
 
+from utilities import render_front_matter
+
 HEADER_RE = re.compile(r"^[A-Z]+$")
 NAME_RE = re.compile(r"^(?:func|var|type|const)\s+(\w+)")
 METHOD_RE = re.compile(r"^func\s+\(\s*(?:\w+\s+)?\*?(\w+)\)\s+(\w+)")
@@ -25,21 +27,20 @@ def build(source: dict, pack: dict, version: str) -> list[dict]:
             raise ValueError(f"An error occurred: {result.stderr}") 
         text = result.stdout
         parsed_package = parse_go_doc(text)
+        metadata = {
+            "source": {"name": source["name"], "kind": source["kind"], "license": source["license"]},
+            "pack": pack,
+            "version": version,
+            "identity": {"package": s},
+            "url": source["url"].format(package=s)
+        }
         md_package = render_markdown(
             parsed_package,
-            {
-                "source": source["name"],
-                "kind": source["kind"],
-                "language": "go",
-                "version": version,
-                "package": s,
-                "url": source["url"].format(package=s),
-                "license": source["license"]
-            }
+            metadata
         )
         data.append(
             {
-                "path": os.path.join(os.getcwd(), f"go/{version}/{source["out"]}/{s}.md"),
+                "path": f"{source["out"]}/{s}.md",
                 "content": md_package,
                 "origin": cmd_all
             }
@@ -164,12 +165,8 @@ def dedent_descritpion(descr: str) -> str:
     return "\n".join(lines).strip()
     
 def render_markdown(parsed_doc: dict, metadata: dict) -> str:
-
-    md_text = "---\n"
-    for key, value in metadata.items():
-        md_text += f"{key}: {value}\n"
-    md_text += "---\n\n"
-    md_text += f"""# {parsed_doc["package"]}
+    front_matter = render_front_matter(**metadata)
+    md_text = f"""# {parsed_doc["package"]}
 
 ## Overview
 
@@ -185,7 +182,7 @@ def render_markdown(parsed_doc: dict, metadata: dict) -> str:
             description = dedent_descritpion(d["description"])
             md_text += f"### {paragraph_title}\n\n{code}\n\n{description}\n\n"
 
-    return md_text.rstrip() + "\n"
+    return f"{front_matter}\n\n{md_text.rstrip()}\n" 
 
 if __name__ == "__main__":
     import tomllib

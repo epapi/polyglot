@@ -9,5 +9,8 @@ notes/
 sources/
 workspace/
 
-## personal usage files
+# personal usage files
 TODO.md
+
+# others
+/**/**/__pycache__
