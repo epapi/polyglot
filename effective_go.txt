@@ -1,0 +1,438 @@
+appunnti su effective_go:
+
+1. il checkout è giusto
+2. 3497 righe. le prime venti mostrano un blocco iniziale:
+
+<!--{
+        "Title": "Effective Go",
+        "Template": true,
+        "Breadcrumb": true
+}-->
+
+da lì in poi, tutto html.
+
+i tag a hanno come href i percorsi relativi rispetto a doc/:
+For a complete list of changes,
+see the <a href="/doc/devel/release">release notes</a>.
+
+oppure 
+
+<a href="/issue/28782">issue 28782</a>
+
+4. ci sono solo h2 e h3. gli id sono minuscoli e gli spazi sostituiti con '-':
+<h3 id="package-names">Package names</h3>
+
+occasionalmente nei tag h2-h3 sono presenti i tag <code></code>
+<h3 id="allocation_make">Allocation with <code>make</code></h3>
+
+non ci sono h1, h4, etc...
+
+gli id dei h2 verranno usati come ancore (#) nell'url
+
+4. molti dei blocchi {{...}} sono code e con questa struttura:
+1804:{{code "/doc/progs/eff_bytesize.go" `/^type ByteSize/` `/^\)/`}}
+1812:{{code "/doc/progs/eff_bytesize.go" `/^func.*ByteSize.*String/` `/^}/`}}
+1979:{{code "/doc/progs/eff_sequence.go" `/^type/` "$"}}
+2418:{{code "/doc/progs/eff_unused1.go" `/package/` `$`}}
+2426:{{code "/doc/progs/eff_unused2.go" `/package/` `$`}}
+3439:{{code "/doc/progs/eff_qr.go" `/package/` `$`}}
+
+per le regex (da shell):
+> grep -Eon -e '^type ByteSize' -e '^\)' _content/doc/progs/eff_bytesize.go
+9:type ByteSize
+21:)
+> sed -n '9,21p' _content/doc/progs/eff_bytesize.go
+type ByteSize float64
+
+const (
+        _           = iota // ignore first value by assigning to blank identifier
+        KB ByteSize = 1 << (10 * iota)
+        MB
+        GB
+        TB
+        PB
+        EB
+        ZB
+        YB
+)
+
+in cases like $ i believe it means: till the end of the file
+
+quindi con riferimento a file dentro doc/...
+
+altri blocchi {{...}} sono con questa struttura:
+3465:The piece from <code>{{"{{if .}}"}}</code>
+3466:to <code>{{"{{end}}"}}</code> executes only if the value of the current data item, called <code>.</code> (dot),
+3471:The two snippets <code>{{"{{.}}"}}</code> say to show the data presented to
+
+5. 148 occorrenze di <pre>
+> grep -Eon '<pre' _content/doc/effective_go.html
+106:<pre
+117:<pre
+149:<pre
+192:<pre
+264:<pre
+318:<pre
+331:<pre
+...
+
+i bocchi pre possono contenere vari tag interni.
+
+&lt;, &gt;, &amp;, &quot sono tutti presenti
+
+6. grep -o '<a href="[^"]*"' _content/doc/effective_go.html | sort | uniq -c | sort -rn | head -200
+      2 <a href="#interface_conversions"
+      2 <a href="#blank"
+      1 <a href="/wiki/LoopvarExperiment"
+      1 <a href="#type_switch"
+      1 <a href="/tour/"
+      1 <a href="/src/"
+      1 <a href="/ref/spec#Rune_literals"
+      1 <a href="/ref/spec"
+      1 <a href="#pointers_vs_values"
+      1 <a href="/pkg/strings/#example-Map"
+      1 <a href="/pkg/runtime#NumCPU"
+      1 <a href="/pkg/runtime#GOMAXPROCS"
+      1 <a href="/pkg/net/http/pprof/"
+      1 <a href="/pkg/html/template/"
+      1 <a href="/pkg/encoding/json/#RawMessage"
+      1 <a href="/pkg/encoding/json/#Marshaler"
+      1 <a href="/pkg/encoding/json/"
+      1 <a href="#maps"
+      1 <a href="/issue/28782"
+      1 <a href="#interfaces_and_types"
+      1 <a href="#initialization"
+      1 <a href="#for"
+      1 <a href="/doc/devel/release"
+      1 <a href="/doc/comment"
+      1 <a href="/doc/code.html"
+      1 <a href="/blog/concurrency-is-not-parallelism"
+      1 <a href="/"
+
+quindi abbiamo a tag misti: ancore e relative path alla documentazione.
+alcuni sono ripetuti.
+
+credo che la soluzione ideale sia trattare gli url come per CodeReviewComments, tipo https://go.dev/doc/effective_go#id
+
+grep -c '<table\|<img\|<ul\|<ol\|<blockquote' _content/doc/effective_go.html retituisce 3
+
+li ispeziono:
+
+ci sono solo 2 occorrenze di <ul e 1 di <blockquote.
+
+indipendentemente dalle occorrenze, deve esistere il corrispettivo markdown!
+
+7. test con beautifulsoup e markdownify
+
+from bs4 import BeautifulSoup
+from markdownify import markdownify as md
+
+(il testo tagliato è un esempio di testo che contiene anche più di un <h2></h2>)
+
+... block comments appear mostly as package comments, but
+... are useful within an expression or to disable large swaths of code.
+... </p>
+... 
+... <p>
+... Comments that appear before top-level declarations, with no intervening newlines,
+... are considered to document the declaration itself.
+... These “doc comments” are the primary documentation for a given Go package or command.
+... For more about doc comments, see “<a href="/doc/comment">Go Doc Comments</a>”.
+... </p>
+... '''
+>>> soup = BeautifulSoup(text, "html.parser")
+>>> print(soup.body)
+None
+>>> print(soup)
+<h2 id="introduction">Introduction</h2>
+<p>
+Go is an open-source programming language that focuses on simplicity, reliability,
+and efficiency, specifically designed to make it easy to build software at scale.
+Although it borrows ideas from existing languages,
+it has unusual properties that make effective Go programs
+different in character from programs written in its relatives.
+A straightforward translation of a C++ or Java program into Go
+is unlikely to produce a satisfactory result—Java programs
+are written in Java, not Go.
+On the other hand, thinking about the problem from a Go
+perspective could produce a successful but quite different
+program.
+In other words,
+to write Go well, it's important to understand its properties
+and idioms.
+It's also important to know the established conventions for
+programming in Go, such as naming, formatting, program
+construction, and so on, so that programs you write
+will be easy for other Go programmers to understand.
+</p>
+<p>
+This document gives tips for writing clear, idiomatic Go code.
+It augments the <a href="/ref/spec">language specification</a>,
+the <a href="/tour/">Tour of Go</a>,
+and <a href="/doc/code.html">How to Write Go Code</a>,
+all of which you
+should read first.
+</p>
+<h3 id="examples">Examples</h3>
+<p>
+The <a href="/src/">Go package sources</a>
+are intended to serve not
+only as the core library but also as examples of how to
+use the language.
+Moreover, many of the packages contain working, self-contained
+executable examples you can run directly from the
+<a href="/">go.dev</a> web site, such as
+<a href="/pkg/strings/#example-Map">this one</a> (if
+necessary, click on the word "Example" to open it up).
+If you have a question about how to approach a problem or how something
+might be implemented, the documentation, code and examples in the
+library can provide answers, ideas and
+background.
+</p>
+<h2 id="formatting">Formatting</h2>
+<p>
+Formatting issues are the most contentious
+but the least consequential.
+People can adapt to different formatting styles
+but it's better if they don't have to, and
+less time is devoted to the topic
+if everyone adheres to the same style.
+The problem is how to approach this Utopia without a long
+prescriptive style guide.
+</p>
+<p>
+With Go we take an unusual
+approach and let the machine
+take care of most formatting issues.
+The <code>gofmt</code> program
+(also available as <code>go fmt</code>, which
+operates at the package level rather than source file level)
+reads a Go program
+and emits the source in a standard style of indentation
+and vertical alignment, retaining and if necessary
+reformatting comments.
+If you want to know how to handle some new layout
+situation, run <code>gofmt</code>; if the answer doesn't
+seem right, rearrange your program (or file a bug about <code>gofmt</code>),
+don't work around it.
+</p>
+<p>
+As an example, there's no need to spend time lining up
+the comments on the fields of a structure.
+<code>Gofmt</code> will do that for you.  Given the
+declaration
+</p>
+<pre>
+type T struct {
+    name string // name of the object
+    value int // its value
+}
+</pre>
+<p>
+<code>gofmt</code> will line up the columns:
+</p>
+<pre>
+type T struct {
+    name    string // name of the object
+    value   int    // its value
+}
+</pre>
+<p>
+All Go code in the standard packages has been formatted with <code>gofmt</code>.
+</p>
+<p>
+Some formatting details remain.  Very briefly:
+</p>
+<dl>
+<dt>Indentation</dt>
+<dd>We use tabs for indentation and <code>gofmt</code> emits them by default.
+    Use spaces only if you must.
+    </dd>
+<dt>Line length</dt>
+<dd>
+    Go has no line length limit.  Don't worry about overflowing a punched card.
+    If a line feels too long, wrap it and indent with an extra tab.
+    </dd>
+<dt>Parentheses</dt>
+<dd>
+    Go needs fewer parentheses than C and Java: control structures (<code>if</code>,
+    <code>for</code>, <code>switch</code>) do not have parentheses in
+    their syntax.
+    Also, the operator precedence hierarchy is shorter and clearer, so
+<pre>
+x&lt;&lt;8 + y&lt;&lt;16
+</pre>
+    means what the spacing implies, unlike in the other languages.
+    </dd>
+</dl>
+<h2 id="commentary">Commentary</h2>
+<p>
+Go provides C-style <code>/* */</code> block comments
+and C++-style <code>//</code> line comments.
+Line comments are the norm;
+block comments appear mostly as package comments, but
+are useful within an expression or to disable large swaths of code.
+</p>
+<p>
+Comments that appear before top-level declarations, with no intervening newlines,
+are considered to document the declaration itself.
+These “doc comments” are the primary documentation for a given Go package or command.
+For more about doc comments, see “<a href="/doc/comment">Go Doc Comments</a>”.
+</p>
+
+>>> print(md(str(soup), heading_style="ATX"))
+## Introduction
+
+Go is an open-source programming language that focuses on simplicity, reliability,
+and efficiency, specifically designed to make it easy to build software at scale.
+Although it borrows ideas from existing languages,
+it has unusual properties that make effective Go programs
+different in character from programs written in its relatives.
+A straightforward translation of a C++ or Java program into Go
+is unlikely to produce a satisfactory result—Java programs
+are written in Java, not Go.
+On the other hand, thinking about the problem from a Go
+perspective could produce a successful but quite different
+program.
+In other words,
+to write Go well, it's important to understand its properties
+and idioms.
+It's also important to know the established conventions for
+programming in Go, such as naming, formatting, program
+construction, and so on, so that programs you write
+will be easy for other Go programmers to understand.
+
+This document gives tips for writing clear, idiomatic Go code.
+It augments the [language specification](/ref/spec),
+the [Tour of Go](/tour/),
+and [How to Write Go Code](/doc/code.html),
+all of which you
+should read first.
+
+### Examples
+
+The [Go package sources](/src/)
+are intended to serve not
+only as the core library but also as examples of how to
+use the language.
+Moreover, many of the packages contain working, self-contained
+executable examples you can run directly from the
+[go.dev](/) web site, such as
+[this one](/pkg/strings/#example-Map) (if
+necessary, click on the word "Example" to open it up).
+If you have a question about how to approach a problem or how something
+might be implemented, the documentation, code and examples in the
+library can provide answers, ideas and
+background.
+
+## Formatting
+
+Formatting issues are the most contentious
+but the least consequential.
+People can adapt to different formatting styles
+but it's better if they don't have to, and
+less time is devoted to the topic
+if everyone adheres to the same style.
+The problem is how to approach this Utopia without a long
+prescriptive style guide.
+
+With Go we take an unusual
+approach and let the machine
+take care of most formatting issues.
+The `gofmt` program
+(also available as `go fmt`, which
+operates at the package level rather than source file level)
+reads a Go program
+and emits the source in a standard style of indentation
+and vertical alignment, retaining and if necessary
+reformatting comments.
+If you want to know how to handle some new layout
+situation, run `gofmt`; if the answer doesn't
+seem right, rearrange your program (or file a bug about `gofmt`),
+don't work around it.
+
+As an example, there's no need to spend time lining up
+the comments on the fields of a structure.
+`Gofmt` will do that for you. Given the
+declaration
+
+```
+type T struct {
+    name string // name of the object
+    value int // its value
+}
+```
+
+`gofmt` will line up the columns:
+
+```
+type T struct {
+    name    string // name of the object
+    value   int    // its value
+}
+```
+
+All Go code in the standard packages has been formatted with `gofmt`.
+
+Some formatting details remain. Very briefly:
+
+Indentation
+:   We use tabs for indentation and `gofmt` emits them by default.
+    Use spaces only if you must.
+
+Line length
+:   Go has no line length limit. Don't worry about overflowing a punched card.
+    If a line feels too long, wrap it and indent with an extra tab.
+
+Parentheses
+:   Go needs fewer parentheses than C and Java: control structures (`if`,
+    `for`, `switch`) do not have parentheses in
+    their syntax.
+    Also, the operator precedence hierarchy is shorter and clearer, so
+
+    ```
+    x<<8 + y<<16
+    ```
+
+    means what the spacing implies, unlike in the other languages.
+
+## Commentary
+
+Go provides C-style `/* */` block comments
+and C++-style `//` line comments.
+Line comments are the norm;
+block comments appear mostly as package comments, but
+are useful within an expression or to disable large swaths of code.
+
+Comments that appear before top-level declarations, with no intervening newlines,
+are considered to document the declaration itself.
+These “doc comments” are the primary documentation for a given Go package or command.
+For more about doc comments, see “[Go Doc Comments](/doc/comment)”.
+
+
+La mia supposizione è che questa combinazione converte in modo preciso praticamente tutto, ma bisogna parsare gli url e le ancore per allinearle a CodeReviewComments.
+
+Esempio di come gestire la cosa (ma non saprei):
+
+>>> soup = bs(html, 'html.parser')
+>>> first_header = soup.find("h2")
+>>> if first_header:
+...     content = []
+...     for sibling in first_header.find_next_sibling():
+...         if sibling.name == "h2":
+...             break ## next loop to collect children
+...         content.append(sibling)
+...     for item in content:
+...         print(item)
+...  
+
+-----
+
+considerazioni finali
+
+1. i tag <code> vanno sostituiti con <pre> a meno che non siano già dentro questi.
+2. se ci sono pochi <dl> tocca trasformarli in elenchi puntati
+3. i link vanno corretti con beautifulsoup. cerco i tag a e li modifico direttamente con a["href"] = ...
+
+quindi il senso è che devo prima avere un file compatibile con la conversione in markdown.
+

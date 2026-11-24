@@ -9,13 +9,15 @@ from datetime import datetime
 from typing import Callable
 
 import crc
+import effective_go
 import godoc
 
 PACK_PATH = "packs/go/pack.toml"
 CORPUS_BASE_PATH = "corpus/go"
 BUILDERS = {
     "code_review_comments": crc.build,
-    "go_doc": godoc.build
+    "go_doc": godoc.build,
+    "effective_go": effective_go.build
 }
 
 def get_go_version() -> str:
@@ -84,7 +86,6 @@ def main():
             print(f"{source["name"]}: {len(source_files)} files")
             files_and_sources.append({"source": source["name"], "files": source_files})
 
-    # shas256 = []
     corpus_path = os.path.join(CORPUS_BASE_PATH, version)
     manifest_metadatas = []
 
@@ -105,63 +106,6 @@ def main():
 
     create_manifest(version, manifest_metadatas)
     print("Created MANIFEST.json")
-    # print(files_and_sources)
-
-
-
-    # packages_metadata = [
-    #     {
-    #         "source": "go_doc",
-    #         "kind": "reference",
-    #         "language": "go",
-    #         "version": '"1.26"',
-    #         "package": "errors",
-    #         "url": "https://pkg.go.dev/errors",
-    #         "license": "BSD-3-Clause",
-    #     },
-    #     {
-    #         "source": "go_doc",
-    #         "kind": "reference",
-    #         "language": "go",
-    #         "version": '"1.26"',
-    #         "package": "fmt",
-    #         "url": "https://pkg.go.dev/fmt",
-    #         "license": "BSD-3-Clause",
-    #     },
-    #     {
-    #         "source": "go_doc",
-    #         "kind": "reference",
-    #         "language": "go",
-    #         "version": '"1.26"',
-    #         "package": "os",
-    #         "url": "https://pkg.go.dev/os",
-    #         "license": "BSD-3-Clause",
-    #     },
-    # ]
-
-    # go_version = get_go_version()
-    # go_source = "go_doc"
-    # files_metadata = []
-
-    # for meta in packages_metadata:
-    #     package = meta["package"]
-    #     file = f"reference/{package}.md"
-    #     command = f"go doc -all {package}"
-    #     text = run_go_doc(package)
-    #     parsed = parse_go_doc(text)
-    #     md = render_markdown(parsed, meta)
-    #     with open(f"corpus/go/1.26/{file}", "w") as f:
-    #         f.write(md)
-    #     files_metadata.append(
-    #         {
-    #             "path": file,
-    #             "source": go_source,
-    #             "command": command,
-    #             "sha256": hashlib.sha256(md.encode("utf-8")).hexdigest()
-    #         }
-    #     )
-
-    # create_manifest(go_version=go_version, files_metadata=files_metadata)
 
 
 if __name__ == "__main__":
